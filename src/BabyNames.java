@@ -212,9 +212,8 @@ public class BabyNames {
 		// write your answer here
 
 		// --------------------------------------------
-		
-
-
+		Name name = new Name(babyName, genderSuitability);
+		bst.insert(name);
 		// --------------------------------------------
 	}
 
@@ -224,8 +223,9 @@ public class BabyNames {
 		// write your answer here
 
 		// --------------------------------------------
-
-
+		// Use dummy value for genderSuitability because no comparison is made
+		Name name = new Name(babyName, 0);
+		bst.delete(name);
 
 		// --------------------------------------------
 	}
@@ -239,12 +239,29 @@ public class BabyNames {
 		// write your answer here
 
 		// --------------------------------------------
-
-
+		
 
 		// --------------------------------------------
 
 		return ans;
+	}
+	
+	int findWithinInterval(BSTVertex T, String start, String end) {
+		if (T == null) {
+			return 0;
+		} else if (isWithinRange(T.key.babyName, start, end) && isRightGender(T.key, )) {
+			return 1 + findWithinInterval(T.left, start, end) + findWithinInterval(T.right, start, end);
+		} else {
+			return findWithinInterval(T.left, start, end) + findWithinInterval(T.right, start, end);
+		}
+	}
+	
+	boolean isRightGender(Name name, int genderMatch) {
+		return name.genderSuitability == genderMatch;
+	}
+	
+	boolean isWithinRange(String input, String start, String end) {
+		return input.compareTo(start) >= 0 && input.compareTo(end) < 0;
 	}
 
 	void run() throws Exception {
