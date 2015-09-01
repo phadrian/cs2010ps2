@@ -44,7 +44,7 @@ public class BabyNames {
 		protected BSTVertex search(BSTVertex T, Name v) {
 			if (T == null)  return T;                                  // not found
 			else if (T.key.babyName.equals(v.babyName)) return T;                                      // found
-			else if (T.key.babyName.compareTo(v.babyName) > 0)  return search(T.right, v);       // search to the right
+			else if (T.key.babyName.compareTo(v.babyName) < 0)  return search(T.right, v);       // search to the right
 			else                 return search(T.left, v);         // search to the left
 		}
 
@@ -128,16 +128,12 @@ public class BabyNames {
 				if (T.left == null && T.right == null)                   // this is a leaf
 					T = null;                                      // simply erase this node
 				else if (T.left == null && T.right != null) {   // only one child at right
-					BSTVertex temp = T;
 					T.right.parent = T.parent;
 					T = T.right;                                                 // bypass T
-					temp = null;
 				}
 				else if (T.left != null && T.right == null) {    // only one child at left
-					BSTVertex temp = T;
 					T.left.parent = T.parent;
 					T = T.left;                                                  // bypass T
-					temp = null;
 				}
 				else {                                 // has two children, find successor
 					Name successorV = successor(v);
@@ -191,6 +187,7 @@ public class BabyNames {
 		public int getHeight() { return getHeight(root); }
 		
 		public BSTVertex getRoot() { return root; }
+		
 	}
 
 
