@@ -189,6 +189,8 @@ public class BabyNames {
 		}
 
 		public int getHeight() { return getHeight(root); }
+		
+		public BSTVertex getRoot() { return root; }
 	}
 
 
@@ -231,33 +233,28 @@ public class BabyNames {
 	}
 
 	int Query(String START, String END, int genderPreference) {
-		int ans = 0;
 
 		// You have to answer how many baby name starts
 		// with prefix that is inside query interval [START..END)
 		//
 		// write your answer here
-
-		// --------------------------------------------
-		
-
-		// --------------------------------------------
-
-		return ans;
+		return genderMatchWithinInterval(bst.getRoot(), START, END, genderPreference);
 	}
 	
-	int findWithinInterval(BSTVertex T, String start, String end) {
+	int genderMatchWithinInterval(BSTVertex T, String start, String end, int genderPreference) {
 		if (T == null) {
 			return 0;
-		} else if (isWithinRange(T.key.babyName, start, end) && isRightGender(T.key, )) {
-			return 1 + findWithinInterval(T.left, start, end) + findWithinInterval(T.right, start, end);
+		} else if (isWithinRange(T.key.babyName, start, end) && isRightGender(T.key, genderPreference)) {
+			return 1 + genderMatchWithinInterval(T.left, start, end, genderPreference) + 
+					genderMatchWithinInterval(T.right, start, end, genderPreference);
 		} else {
-			return findWithinInterval(T.left, start, end) + findWithinInterval(T.right, start, end);
+			return genderMatchWithinInterval(T.left, start, end, genderPreference) + 
+					genderMatchWithinInterval(T.right, start, end, genderPreference);
 		}
 	}
 	
 	boolean isRightGender(Name name, int genderMatch) {
-		return name.genderSuitability == genderMatch;
+		return name.genderSuitability == genderMatch || genderMatch == 0;
 	}
 	
 	boolean isWithinRange(String input, String start, String end) {
