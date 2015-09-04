@@ -60,6 +60,7 @@ public class BabyNames {
 				T.left.parent = T;
 			}
 
+			T.height = 1 + Math.max(getHeight(T.left), getHeight(T.right));
 			return T;                                          // return the updated BST
 		}
 
@@ -134,6 +135,7 @@ public class BabyNames {
 				else if (T.left != null && T.right == null) {    // only one child at left
 					T.left.parent = T.parent;
 					T = T.left;                                                  // bypass T
+					T.parent.height--;
 				}
 				else {                                 // has two children, find successor
 					Name successorV = successor(v);
@@ -145,6 +147,8 @@ public class BabyNames {
 				T.right = delete(T.right, v);
 			else                                                   // search to the left
 				T.left = delete(T.left, v);
+			
+			T.height = 1 + Math.max(getHeight(T.left), getHeight(T.right));
 			return T;                                          // return the updated BST
 		}
 
@@ -187,9 +191,117 @@ public class BabyNames {
 		public int getHeight() { return getHeight(root); }
 		
 		public BSTVertex getRoot() { return root; }
-		
 	}
 
+	class AVL extends BST {
+		
+		private BSTVertex rotateLeft(BSTVertex T) {
+			BSTVertex w = T.right;
+			// Connect the right node of T (which is w) to the parent of T
+			w.parent = T.parent;
+			// Put w above T
+			T.parent = w;
+			// Left node of w is shifted to right of T to replace w
+			T.right = w.left;
+			// Need to set the parent of w.left unless w.left does not exist
+			if (w.left != null) {
+				w.left.parent = T.right;
+			}
+			// Set T, which is under w, to w.left
+			w.left = T;
+			return w;
+		}
+		
+		private BSTVertex rotateRight(BSTVertex T) {
+			BSTVertex w = T.left;
+			w.parent = T.parent;
+			T.parent = w;
+			T.left = w.right;
+			if (w.left != null) {
+				w.right.parent = T.left;
+			}
+			w.right = T;
+			return w;
+		}
+		
+		public int getBalanceFactor(BSTVertex T) { 
+			if (T == null) {
+				return 0;
+			} else {
+				return getHeight(T.left) - getHeight(T.right);
+			}
+		}
+		
+		@Override
+		protected BSTVertex insert(BSTVertex T, Name v) {
+			if (T == null) return new BSTVertex(v);          // insertion point is found
+
+			if (T.key.babyName.compareTo(v.babyName) < 0) {                                      // search to the right
+				T.right = insert(T.right, v);
+				T.right.parent = T;
+			}
+			else {                                                 // search to the left
+				T.left = insert(T.left, v);
+				T.left.parent = T;
+			}
+			// Update the height after insertion
+			T.height = 1 + Math.max(getHeight(T.left), getHeight(T.right));
+			// Rebalance the tree after insertion
+			T = balance(T);
+			return T;                                          // return the updated BST
+		}
+		
+		@Override
+		protected BSTVertex delete(BSTVertex T, Name v) {
+			if (T == null)  return T;              // cannot find the item to be deleted
+
+			if (T.key.babyName.equals(v.babyName)) {                          // this is the node to be deleted
+				if (T.left == null && T.right == null)                   // this is a leaf
+					T = null;                                      // simply erase this node
+				else if (T.left == null && T.right != null) {   // only one child at right
+					T.right.parent = T.parent;
+					T = T.right;                                                 // bypass T
+				}
+				else if (T.left != null && T.right == null) {    // only one child at left
+					T.left.parent = T.parent;
+					T = T.left;                                                  // bypass T
+					T.parent.height--;
+				}
+				else {                                 // has two children, find successor
+					Name successorV = successor(v);
+					T.key = successorV;         // replace this key with the successor's key
+					T.right = delete(T.right, successorV);      // delete the old successorV
+				}
+			}
+			else if (T.key.babyName.compareTo(v.babyName) < 0)                                   // search to the right
+				T.right = delete(T.right, v);
+			else                                                   // search to the left
+				T.left = delete(T.left, v);
+			// Update the height after deletion
+			T.height = 1 + Math.max(getHeight(T.left), getHeight(T.right));
+			// Balance the tree after deletion
+			T = balance(T);
+			return T;                                          // return the updated BST
+		}
+
+		public BSTVertex balance(BSTVertex T) {
+			// Check the balance factor
+			if (getBalanceFactor(T) == 2 && getBalanceFactor(T.left) == 1) {
+				T = rotateRight(T);
+			} else if (getBalanceFactor(T) == 2 && getBalanceFactor(T.left) == -1) {
+				T.left = rotateLeft(T.left);
+				T = rotateRight(T);
+			} else if (getBalanceFactor(T) == -2 && getBalanceFactor(T.left) == 1) {
+				T.right = rotateRight(T.right);
+				T = rotateLeft(T);
+			} else if (getBalanceFactor(T) == -2 && getBalanceFactor(T.left) == -1) {
+				T = rotateLeft(T);
+			} else { // Assume in this case getBalanceFactor(T) == -2 && getBalanceFactor(T.left) == -1
+				; // No need to do anything
+			}
+			return T;
+		}
+	}
 
 	// --------------------------------------------
 
@@ -199,7 +311,7 @@ public class BabyNames {
 		// write your answer here
 
 		// --------------------------------------------
-		bst = new BST();
+		bst = new AVL();
 
 		// --------------------------------------------
 	}
