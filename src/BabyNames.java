@@ -11,7 +11,8 @@ import java.util.NoSuchElementException; // we will use this to illustrate Java 
 public class BabyNames {
 	// if needed, declare a private data structure here that
 	// is accessible to all methods in this class
-	private BST bst;
+	private AVL avlMale;
+	private AVL avlFemale;
 
 	// --------------------------------------------
 	class Name {
@@ -28,12 +29,14 @@ public class BabyNames {
 		BSTVertex(Name v) { 
 			key = v; 
 			parent = left = right = null; 
-			height = 0; 
+			height = 0;
+			size = 1;
 		}
 		// all these attributes remain public to slightly simplify the code
 		public BSTVertex parent, left, right;
 		public Name key;
 		public int height; // will be used in AVL lecture
+		public int size;
 	}
 
 	// This is just a sample implementation
@@ -67,7 +70,7 @@ public class BabyNames {
 		protected void inorder(BSTVertex T) {
 			if (T == null) return;
 			inorder(T.left);                               // recursively go to the left
-			System.out.printf(" %d", T.key);                      // visit this BST node
+			System.out.printf(" %d", T.key);                      // visit this BST node			
 			inorder(T.right);                             // recursively go to the right
 		}
 
@@ -126,8 +129,9 @@ public class BabyNames {
 			if (T == null)  return T;              // cannot find the item to be deleted
 
 			if (T.key.babyName.equals(v.babyName)) {                          // this is the node to be deleted
-				if (T.left == null && T.right == null)                   // this is a leaf
+				if (T.left == null && T.right == null) {                   // this is a leaf
 					T = null;                                      // simply erase this node
+				}
 				else if (T.left == null && T.right != null) {   // only one child at right
 					T.right.parent = T.parent;
 					T = T.right;                                                 // bypass T
@@ -135,7 +139,6 @@ public class BabyNames {
 				else if (T.left != null && T.right == null) {    // only one child at left
 					T.left.parent = T.parent;
 					T = T.left;                                                  // bypass T
-					T.parent.height--;
 				}
 				else {                                 // has two children, find successor
 					Name successorV = successor(v);
@@ -185,10 +188,24 @@ public class BabyNames {
 		// will be used in AVL lecture
 		protected int getHeight(BSTVertex T) {
 			if (T == null) return -1;
-			else return Math.max(getHeight(T.left), getHeight(T.right)) + 1;
+			else return T.height;
 		}
 
 		public int getHeight() { return getHeight(root); }
+
+		protected void updateHeight(BSTVertex T) {
+			if (T != null) {
+				T.height = 1 + Math.max(getHeight(T.left), getHeight(T.right));
+			}
+		}
+		
+		protected int getSize(BSTVertex T) {
+			if (T == null) {
+				return 0;
+			} else {
+				return T.size;
+			}
+		}
 		
 		public BSTVertex getRoot() { return root; }
 	}
@@ -196,7 +213,7 @@ public class BabyNames {
 	class AVL extends BST {
 		
 		private BSTVertex rotateLeft(BSTVertex T) {
-			BSTVertex w = T.right;
+			BSTVertex w = T.right;			
 			// Connect the right node of T (which is w) to the parent of T
 			w.parent = T.parent;
 			// Put w above T
@@ -205,10 +222,23 @@ public class BabyNames {
 			T.right = w.left;
 			// Need to set the parent of w.left unless w.left does not exist
 			if (w.left != null) {
-				w.left.parent = T.right;
+				w.left.parent = T;
 			}
 			// Set T, which is under w, to w.left
 			w.left = T;
+			
+			if (w.parent != null) {
+				if (w.parent.left == T) {
+					w.parent.left = w;
+				} else {
+					w.parent.right = w;
+				}
+			}
+			updateHeight(T);
+			updateHeight(w);
+			// Only T and w has new sizes
+			w.size = T.size;
+			T.size = getSize(T.left) + getSize(T.right) + 1;
 			return w;
 		}
 		
@@ -217,10 +247,22 @@ public class BabyNames {
 			w.parent = T.parent;
 			T.parent = w;
 			T.left = w.right;
-			if (w.left != null) {
-				w.right.parent = T.left;
+			if (w.right != null) {
+				w.right.parent = T;
 			}
 			w.right = T;
+			
+			if (w.parent != null) {
+				if (w.parent.left == T) {
+					w.parent.left = w;
+				} else {
+					w.parent.right = w;
+				}
+			}
+			updateHeight(T);
+			updateHeight(w);
+			w.size = T.size;
+			T.size = getSize(T.left) + getSize(T.right) + 1;
 			return w;
 		}
 		
@@ -232,6 +274,24 @@ public class BabyNames {
 			}
 		}
 		
+		public BSTVertex balance(BSTVertex T) {
+			// Check the balance factor
+			if (getBalanceFactor(T) == 2 && getBalanceFactor(T.left) == 1) {
+				T = rotateRight(T);
+			} else if (getBalanceFactor(T) == 2 && getBalanceFactor(T.left) == -1) {
+				T.left = rotateLeft(T.left);
+				T = rotateRight(T);
+			} else if (getBalanceFactor(T) == -2 && getBalanceFactor(T.right) == 1) {
+				T.right = rotateRight(T.right);
+				T = rotateLeft(T);
+			} else if (getBalanceFactor(T) == -2 && getBalanceFactor(T.right) == -1) {
+				T = rotateLeft(T);
+			} else {
+				; // No need to do anything
+			}
+			return T;
+		}
+
 		@Override
 		protected BSTVertex insert(BSTVertex T, Name v) {
 			if (T == null) return new BSTVertex(v);          // insertion point is found
@@ -244,9 +304,9 @@ public class BabyNames {
 				T.left = insert(T.left, v);
 				T.left.parent = T;
 			}
-			// Update the height after insertion
-			T.height = 1 + Math.max(getHeight(T.left), getHeight(T.right));
-			// Rebalance the tree after insertion
+			updateHeight(T);
+			T.size++;
+			// Balance the tree after insertion
 			T = balance(T);
 			return T;                                          // return the updated BST
 		}
@@ -256,8 +316,9 @@ public class BabyNames {
 			if (T == null)  return T;              // cannot find the item to be deleted
 
 			if (T.key.babyName.equals(v.babyName)) {                          // this is the node to be deleted
-				if (T.left == null && T.right == null)                   // this is a leaf
+				if (T.left == null && T.right == null) {                  // this is a leaf
 					T = null;                                      // simply erase this node
+				}
 				else if (T.left == null && T.right != null) {   // only one child at right
 					T.right.parent = T.parent;
 					T = T.right;                                                 // bypass T
@@ -265,7 +326,6 @@ public class BabyNames {
 				else if (T.left != null && T.right == null) {    // only one child at left
 					T.left.parent = T.parent;
 					T = T.left;                                                  // bypass T
-					T.parent.height--;
 				}
 				else {                                 // has two children, find successor
 					Name successorV = successor(v);
@@ -273,101 +333,78 @@ public class BabyNames {
 					T.right = delete(T.right, successorV);      // delete the old successorV
 				}
 			}
-			else if (T.key.babyName.compareTo(v.babyName) < 0)                                   // search to the right
+			else if (T.key.babyName.compareTo(v.babyName) < 0) {                                   // search to the right
 				T.right = delete(T.right, v);
-			else                                                   // search to the left
+			}
+			else {                                                  // search to the left
 				T.left = delete(T.left, v);
-			// Update the height after deletion
-			T.height = 1 + Math.max(getHeight(T.left), getHeight(T.right));
+			}
+			updateHeight(T);
+			if (T != null) {
+				T.size--;
+			}
 			// Balance the tree after deletion
 			T = balance(T);
 			return T;                                          // return the updated BST
 		}
 
-		public BSTVertex balance(BSTVertex T) {
-			// Check the balance factor
-			if (getBalanceFactor(T) == 2 && getBalanceFactor(T.left) == 1) {
-				T = rotateRight(T);
-			} else if (getBalanceFactor(T) == 2 && getBalanceFactor(T.left) == -1) {
-				T.left = rotateLeft(T.left);
-				T = rotateRight(T);
-			} else if (getBalanceFactor(T) == -2 && getBalanceFactor(T.left) == 1) {
-				T.right = rotateRight(T.right);
-				T = rotateLeft(T);
-			} else if (getBalanceFactor(T) == -2 && getBalanceFactor(T.left) == -1) {
-				T = rotateLeft(T);
-			} else { // Assume in this case getBalanceFactor(T) == -2 && getBalanceFactor(T.left) == -1
-				; // No need to do anything
+		private int lesserThan(BSTVertex T, String key) {
+			if (T == null) {
+				return 0;
+			} else if (T.key.babyName.compareTo(key) < 0) {
+				return getSize(T.left) + 1 + lesserThan(T.right, key);
+			} else if (T.key.babyName.compareTo(key) > 0) {
+				return lesserThan(T.left, key);
+			} else if (T.key.babyName.compareTo(key) == 0) {
+				return getSize(T.left);
+			} else {
+				// Dummy branch
+				return 0;
 			}
-			return T;
+		}
+		
+		public int lesserThan(String key) {
+			return lesserThan(root, key);
 		}
 	}
 
 	// --------------------------------------------
 
 	public BabyNames() {
-		// Write necessary code during construction;
-		//
-		// write your answer here
-
-		// --------------------------------------------
-		bst = new AVL();
-
-		// --------------------------------------------
+		avlMale = new AVL();
+		avlFemale = new AVL();
 	}
 
 	void AddSuggestion(String babyName, int genderSuitability) {
-		// You have to insert the information (babyName, genderSuitability)
-		// into your chosen data structure
-		//
-		// write your answer here
 
-		// --------------------------------------------
 		Name name = new Name(babyName, genderSuitability);
-		bst.insert(name);
+		if (genderSuitability == 1) {
+			avlMale.insert(name);
+		} else { // Assume genderSuitability == 2
+			avlFemale.insert(name);
+		}
 		// --------------------------------------------
 	}
 
 	void RemoveSuggestion(String babyName) {
-		// You have to remove the babyName from your chosen data structure
-		//
-		// write your answer here
-
-		// --------------------------------------------
-		// Use dummy value for genderSuitability because no comparison is made
+		
+		// Dummy value for genderSuitability
 		Name name = new Name(babyName, 0);
-		bst.delete(name);
-
-		// --------------------------------------------
+		avlMale.delete(name);
+		avlFemale.delete(name);
+		
 	}
 
 	int Query(String START, String END, int genderPreference) {
 
-		// You have to answer how many baby name starts
-		// with prefix that is inside query interval [START..END)
-		//
-		// write your answer here
-		return genderMatchWithinInterval(bst.getRoot(), START, END, genderPreference);
-	}
-	
-	int genderMatchWithinInterval(BSTVertex T, String start, String end, int genderPreference) {
-		if (T == null) {
-			return 0;
-		} else if (isWithinRange(T.key.babyName, start, end) && isRightGender(T.key, genderPreference)) {
-			return 1 + genderMatchWithinInterval(T.left, start, end, genderPreference) + 
-					genderMatchWithinInterval(T.right, start, end, genderPreference);
-		} else {
-			return genderMatchWithinInterval(T.left, start, end, genderPreference) + 
-					genderMatchWithinInterval(T.right, start, end, genderPreference);
+		if (genderPreference == 1) {
+			return avlMale.lesserThan(END) - avlMale.lesserThan(START);
+		} else if (genderPreference == 2) {
+			return avlFemale.lesserThan(END) - avlFemale.lesserThan(START);
+		} else { // Last case genderPreference == 0
+			return (avlMale.lesserThan(END) - avlMale.lesserThan(START)) + 
+					(avlFemale.lesserThan(END) - avlFemale.lesserThan(START));
 		}
-	}
-	
-	boolean isRightGender(Name name, int genderMatch) {
-		return name.genderSuitability == genderMatch || genderMatch == 0;
-	}
-	
-	boolean isWithinRange(String input, String start, String end) {
-		return input.compareTo(start) >= 0 && input.compareTo(end) < 0;
 	}
 
 	void run() throws Exception {
