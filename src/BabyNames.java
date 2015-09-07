@@ -199,6 +199,12 @@ public class BabyNames {
 			}
 		}
 		
+		protected void updateSize(BSTVertex T) {
+			if (T != null) {
+				T.size = 1 + getSize(T.left) + getSize(T.right);
+			}
+		}
+		
 		protected int getSize(BSTVertex T) {
 			if (T == null) {
 				return 0;
@@ -340,9 +346,7 @@ public class BabyNames {
 				T.left = delete(T.left, v);
 			}
 			updateHeight(T);
-			if (T != null) {
-				T.size--;
-			}
+			updateSize(T);
 			// Balance the tree after deletion
 			T = balance(T);
 			return T;                                          // return the updated BST
@@ -392,7 +396,6 @@ public class BabyNames {
 		Name name = new Name(babyName, 0);
 		avlMale.delete(name);
 		avlFemale.delete(name);
-		
 	}
 
 	int Query(String START, String END, int genderPreference) {
